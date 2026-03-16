@@ -12,21 +12,21 @@ $user = current_user();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars(APP_NAME, ENT_QUOTES, 'UTF-8') ?></title>
-  <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_asset('/css/style.css'), ENT_QUOTES, 'UTF-8') ?>?v=<?= time() ?>">
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="/">Login Starter</a>
+      <a class="brand" href="<?= htmlspecialchars(app_path('/'), ENT_QUOTES, 'UTF-8') ?>">Login Starter</a>
       <nav class="nav">
         <?php if ($user): ?>
-          <a href="/dashboard.php">Dashboard</a>
+          <a href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">Dashboard</a>
           <?php if ($user['role'] === 'admin'): ?>
-            <a href="/admin.php">Admin</a>
+            <a href="<?= htmlspecialchars(app_path('/admin.php'), ENT_QUOTES, 'UTF-8') ?>">Admin</a>
           <?php endif; ?>
-          <a href="/logout.php">Logout</a>
+          <a href="<?= htmlspecialchars(app_path('/logout.php'), ENT_QUOTES, 'UTF-8') ?>">Logout</a>
         <?php else: ?>
-          <a href="/login.php">Login</a>
+          <a href="<?= htmlspecialchars(app_path('/login.php'), ENT_QUOTES, 'UTF-8') ?>">Login</a>
         <?php endif; ?>
       </nav>
     </div>

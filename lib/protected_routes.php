@@ -7,15 +7,15 @@ require_once __DIR__ . '/auth.php';
 function should_skip_protection(string $path): bool
 {
     $whitelist = [
-        '/login.php',
-        '/logout.php',
+        app_path('/login.php'),
+        app_path('/logout.php'),
     ];
 
     if (in_array($path, $whitelist, true)) {
         return true;
     }
 
-    return str_starts_with($path, '/css/') || str_starts_with($path, '/js/');
+    return str_starts_with($path, app_path('/css/')) || str_starts_with($path, app_path('/js/'));
 }
 
 function route_pattern_matches(string $path, string $pattern): bool
@@ -49,7 +49,7 @@ function enforce_auth_middleware(): void
 
     if (is_protected_path($path) && !is_logged_in()) {
         $next = rawurlencode(current_path_with_query());
-        header('Location: /login.php?next=' . $next);
+        header('Location: ' . app_path('/login.php') . '?next=' . $next);
         exit;
     }
 }

@@ -71,7 +71,7 @@ function require_login(): void
 {
     if (!is_logged_in()) {
         $next = rawurlencode(current_path_with_query());
-        header('Location: /login.php?next=' . $next);
+        header('Location: ' . app_path('/login.php') . '?next=' . $next);
         exit;
     }
 }

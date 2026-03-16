@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         if ($action === 'save_redirect') {
-            $path = trim((string)($_POST['default_redirect_path'] ?? '/dashboard.php'));
-            $path = safe_next_path($path) ?? '/dashboard.php';
+            $path = trim((string)($_POST['default_redirect_path'] ?? app_path('/dashboard.php')));
+            $path = safe_next_path($path) ?? app_path('/dashboard.php');
             set_setting('default_redirect_path', $path);
             $message = 'ログイン後遷移先を更新しました。';
         }
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $users = $pdo->query('SELECT id, mail, status, line_name, role, created_at FROM users ORDER BY id ASC')->fetchAll();
 $routes = $pdo->query('SELECT id, pattern, enabled, created_at FROM protected_routes ORDER BY id DESC')->fetchAll();
-$defaultRedirect = get_setting('default_redirect_path', '/dashboard.php');
+$defaultRedirect = get_setting('default_redirect_path', app_path('/dashboard.php'));
 
 include __DIR__ . '/header.php';
 ?>
@@ -114,7 +114,7 @@ include __DIR__ . '/header.php';
     <h2>ログイン後の遷移先</h2>
     <form method="post" class="inline-form">
       <input type="hidden" name="action" value="save_redirect">
-      <input type="text" name="default_redirect_path" value="<?= htmlspecialchars($defaultRedirect, ENT_QUOTES, 'UTF-8') ?>" placeholder="/dashboard.php">
+      <input type="text" name="default_redirect_path" value="<?= htmlspecialchars($defaultRedirect, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn" type="submit">保存</button>
     </form>
 

@@ -10,7 +10,7 @@ $error = '';
 $next = safe_next_path($_GET['next'] ?? null);
 
 if (is_logged_in()) {
-    header('Location: ' . ($next ?? get_setting('default_redirect_path', '/dashboard.php')));
+    header('Location: ' . ($next ?? get_setting('default_redirect_path', app_path('/dashboard.php'))));
     exit;
 }
 
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $next = safe_next_path($_POST['next'] ?? null);
 
     if (login($mail, $password)) {
-        $destination = $next ?? get_setting('default_redirect_path', '/dashboard.php');
+        $destination = $next ?? get_setting('default_redirect_path', app_path('/dashboard.php'));
         header('Location: ' . $destination);
         exit;
     }

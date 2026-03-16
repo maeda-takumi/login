@@ -12,11 +12,11 @@ include __DIR__ . '/header.php';
   <p>このフォルダを配置するだけで、ログイン・管理画面・保護URL制御を追加できます。</p>
   <div class="actions">
     <?php if (is_logged_in()): ?>
-      <a class="btn" href="/dashboard.php">ダッシュボードへ</a>
+      <a class="btn" href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">ダッシュボードへ</a>
     <?php else: ?>
-      <a class="btn" href="/login.php">ログインする</a>
+      <a class="btn" href="<?= htmlspecialchars(app_path('/login.php'), ENT_QUOTES, 'UTF-8') ?>">ログインする</a>
     <?php endif; ?>
-    <a class="btn btn-secondary" href="/protected-demo.php">保護URLサンプル</a>
+    <a class="btn btn-secondary" href="<?= htmlspecialchars(app_path('/protected-demo.php'), ENT_QUOTES, 'UTF-8') ?>">保護URLサンプル</a>
   </div>
 </section>
 

@@ -6,5 +6,5 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/auth.php';
 
 logout();
-header('Location: /login.php');
+header('Location: ' . app_path('/login.php'));
 exit;
