@@ -101,6 +101,44 @@ function current_path_with_query(): string
     return $uri === '' ? '/' : $uri;
 }
 
+function request_origin(): string
+{
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+    $scheme = $isHttps ? 'https' : 'http';
+    $host = (string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost');
+
+    return $scheme . '://' . $host;
+}
+
+function current_full_url_with_query(): string
+{
+    return request_origin() . current_path_with_query();
+}
+
+function normalize_route_or_redirect_target(?string $target): ?string
+{
+    if ($target === null) {
+        return null;
+    }
+
+    $target = trim($target);
+    if ($target === '') {
+        return null;
+    }
+
+    if (str_starts_with($target, '/')) {
+        return $target;
+    }
+
+    $scheme = parse_url($target, PHP_URL_SCHEME);
+    if (!is_string($scheme) || !in_array(strtolower($scheme), ['http', 'https'], true)) {
+        return null;
+    }
+
+    return $target;
+}
+
 function safe_next_path(?string $path): ?string
 {
     if ($path === null || $path === '') {

@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($action === 'save_redirect') {
             $path = trim((string)($_POST['default_redirect_path'] ?? app_path('/')));
-            $path = safe_next_path($path) ?? app_path('/');
+            $path = normalize_route_or_redirect_target($path) ?? app_path('/');
             set_setting('default_redirect_path', $path);
             $message = 'ログイン後遷移先を更新しました。';
         }
@@ -57,9 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'add_protected_route') {
             $patternInput = trim((string)$_POST['pattern']);
-            $parsedPath = parse_url($patternInput, PHP_URL_PATH);
-            $pattern = is_string($parsedPath) ? $parsedPath : $patternInput;
-            if ($pattern === '' || !str_starts_with($pattern, '/')) {
+            $pattern = normalize_route_or_redirect_target($patternInput);
+            if ($pattern === null) {
                 throw new RuntimeException('保護URLは / から始まるパス、またはフルURLで入力してください。');
             }
             $stmt = $pdo->prepare('INSERT INTO protected_routes (pattern, enabled) VALUES (:pattern, 1)');

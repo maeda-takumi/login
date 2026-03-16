@@ -19,6 +19,19 @@ function should_skip_protection(string $path): bool
     return str_starts_with($path, app_path('/css/')) || str_starts_with($path, app_path('/js/'));
 }
 
+function route_matches_request(string $path, string $fullUrl, string $pattern): bool
+{
+    if (str_starts_with($pattern, '/')) {
+        return route_pattern_matches($path, $pattern);
+    }
+
+    $scheme = parse_url($pattern, PHP_URL_SCHEME);
+    if (is_string($scheme) && in_array(strtolower($scheme), ['http', 'https'], true)) {
+        return route_pattern_matches($fullUrl, $pattern);
+    }
+
+    return false;
+}
 function route_pattern_matches(string $path, string $pattern): bool
 {
     $escaped = preg_quote($pattern, '#');
@@ -28,11 +41,12 @@ function route_pattern_matches(string $path, string $pattern): bool
 
 function is_protected_path(string $path): bool
 {
+    $fullUrl = current_full_url_with_query();
     $stmt = db()->query('SELECT pattern FROM protected_routes WHERE enabled = 1 ORDER BY LENGTH(pattern) DESC');
     $patterns = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     foreach ($patterns as $pattern) {
-        if (route_pattern_matches($path, (string)$pattern)) {
+        if (route_matches_request($path, $fullUrl, (string)$pattern)) {
             return true;
         }
     }
