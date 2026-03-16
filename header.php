@@ -20,10 +20,8 @@ $user = current_user();
       <a class="brand" href="<?= htmlspecialchars(app_path('/'), ENT_QUOTES, 'UTF-8') ?>">Login Starter</a>
       <nav class="nav">
         <a href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">Dashboard</a>
+        <a href="<?= htmlspecialchars(app_path('/admin.php'), ENT_QUOTES, 'UTF-8') ?>">管理画面</a>
         <?php if ($user): ?>
-          <?php if ($user['role'] === 'admin'): ?>
-            <a href="<?= htmlspecialchars(app_path('/admin.php'), ENT_QUOTES, 'UTF-8') ?>">Admin</a>
-          <?php endif; ?>
           <a href="<?= htmlspecialchars(app_path('/logout.php'), ENT_QUOTES, 'UTF-8') ?>">Logout</a>
         <?php else: ?>
           <a href="<?= htmlspecialchars(app_path('/login.php'), ENT_QUOTES, 'UTF-8') ?>">Login</a>

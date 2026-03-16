@@ -39,22 +39,31 @@ function is_admin(): bool
     return $user !== null && $user['role'] === 'admin';
 }
 
-function login(string $mail, string $password): bool
+function authenticate_user(string $mail, string $password): string
 {
     $stmt = db()->prepare('SELECT * FROM users WHERE mail = :mail LIMIT 1');
     $stmt->execute([':mail' => strtolower(trim($mail))]);
     $user = $stmt->fetch();
 
-    if (!$user || $user['status'] !== 'active') {
-        return false;
+    if (!$user) {
+        return 'invalid_credentials';
+    }
+
+    if ($user['status'] !== 'active') {
+        return 'inactive_user';
     }
 
     if (!password_verify($password, $user['password'])) {
-        return false;
+        return 'invalid_credentials';
     }
 
     $_SESSION['user_id'] = (int)$user['id'];
-    return true;
+    return 'ok';
+}
+
+function login(string $mail, string $password): bool
+{
+    return authenticate_user($mail, $password) === 'ok';
 }
 
 function logout(): void
@@ -103,4 +112,17 @@ function safe_next_path(?string $path): ?string
     }
 
     return str_starts_with($path, '/') ? $path : '/' . ltrim($path, '/');
+}
+
+function generate_random_password(int $length = 10): string
+{
+    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    $max = strlen($chars) - 1;
+    $password = '';
+
+    for ($i = 0; $i < $length; $i++) {
+        $password .= $chars[random_int(0, $max)];
+    }
+
+    return $password;
 }

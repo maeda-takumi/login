@@ -1,21 +1,25 @@
 # Login Starter (PHP + JS + CSS)
 
-汎用ログイン機能を `login` フォルダごと配置して使う想定のシンプル実装です。
+有料コンテンツ向けに、指定URLをログイン必須化できるシンプルな実装です。
 
 ## 機能
 - ログイン / ログアウト
 - SQLiteでユーザ管理
-  - `id`
-  - `mail`
+  - `mail`（ログインID）
   - `password`
-  - `status`
   - `line_name`
+  - `status`（`active` / `inactive`）
 - 管理画面
-  - ログイン後遷移先の設定
+  - ログイン後の共通遷移先設定
   - ユーザ管理（追加・編集・削除）
-  - 保護URLパターン管理（追加・有効化/無効化・削除）
+    - 追加時はパスワード自動発行
+  - 保護URL管理（追加・有効化/無効化・削除）
 - 認証ミドルウェア
-  - 保護URLに一致し、未ログインの場合 `login.php` へリダイレクト
+  - 保護URLに一致し未ログインなら `login.php` へリダイレクト
+
+## 前提
+- 管理画面 (`admin.php`) へのアクセス制限はWebサーバ側で実施する想定
+  - 例: Basic認証 / IP制限 / `.htaccess`
 
 ## 共通ファイル
 - `header.php`
@@ -29,10 +33,6 @@
 ```bash
 php -S 0.0.0.0:8000 -t .
 ```
-
-## 初期管理者
-- mail: `admin@example.com`
-- password: `password123`
 
 ## DBファイル
 - `data/app.sqlite`

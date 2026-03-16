@@ -68,6 +68,7 @@ input, select {
 .alert, .notice { padding:10px; border-radius:10px; margin-bottom:12px; }
 .alert { background:#ffe6e9; color:#b91d3a; }
 .notice.success { background:#e3f7ea; color:#2f7b47; }
+.notice.issued { background:#e8f0ff; color:#1f52bd; }
 .notice.error { background:#ffe9ee; color:#bf1e42; }
 .inline-form { display:flex; gap:8px; margin-bottom:14px; }
 .inline-form input { flex:1; margin-top:0; }

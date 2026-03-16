@@ -9,6 +9,7 @@ function should_skip_protection(string $path): bool
     $whitelist = [
         app_path('/login.php'),
         app_path('/logout.php'),
+        app_path('/admin.php'),
     ];
 
     if (in_array($path, $whitelist, true)) {

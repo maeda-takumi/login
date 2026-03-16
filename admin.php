@@ -5,12 +5,10 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/db.php';
-
-require_admin();
-
 $pdo = db();
 $message = '';
 $error = '';
+$issuedPassword = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -24,46 +22,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'create_user') {
+            $issuedPassword = generate_random_password(10);
             $stmt = $pdo->prepare('INSERT INTO users (mail, password, status, line_name, role) VALUES (:mail, :password, :status, :line_name, :role)');
             $stmt->execute([
                 ':mail' => strtolower(trim((string)$_POST['mail'])),
-                ':password' => password_hash((string)$_POST['password'], PASSWORD_DEFAULT),
+                ':password' => password_hash($issuedPassword, PASSWORD_DEFAULT),
                 ':status' => (string)$_POST['status'],
                 ':line_name' => trim((string)$_POST['line_name']),
-                ':role' => (string)$_POST['role'],
+                ':role' => 'user',
             ]);
-            $message = 'ユーザを追加しました。';
+            $message = 'ユーザを追加しました。発行されたパスワードを控えてください。';
         }
 
         if ($action === 'update_user') {
             $id = (int)$_POST['id'];
-            $params = [
+            $stmt = $pdo->prepare('UPDATE users SET mail = :mail, status = :status, line_name = :line_name, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+            $stmt->execute([
                 ':id' => $id,
                 ':mail' => strtolower(trim((string)$_POST['mail'])),
                 ':status' => (string)$_POST['status'],
                 ':line_name' => trim((string)$_POST['line_name']),
-                ':role' => (string)$_POST['role'],
-            ];
+            ]);
 
-            $sql = 'UPDATE users SET mail = :mail, status = :status, line_name = :line_name, role = :role, updated_at = CURRENT_TIMESTAMP';
-
-            $password = trim((string)($_POST['password'] ?? ''));
-            if ($password !== '') {
-                $sql .= ', password = :password';
-                $params[':password'] = password_hash($password, PASSWORD_DEFAULT);
-            }
-
-            $sql .= ' WHERE id = :id';
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
             $message = 'ユーザを更新しました。';
         }
 
         if ($action === 'delete_user') {
             $id = (int)$_POST['id'];
-            if ($id === (int)current_user()['id']) {
-                throw new RuntimeException('自分自身は削除できません。');
-            }
             $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id');
             $stmt->execute([':id' => $id]);
             $message = 'ユーザを削除しました。';
@@ -98,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$users = $pdo->query('SELECT id, mail, status, line_name, role, created_at FROM users ORDER BY id ASC')->fetchAll();
+$users = $pdo->query('SELECT id, mail, status, line_name, created_at FROM users WHERE role = "user" ORDER BY id ASC')->fetchAll();
 $routes = $pdo->query('SELECT id, pattern, enabled, created_at FROM protected_routes ORDER BY id DESC')->fetchAll();
 $defaultRedirect = get_setting('default_redirect_path', app_path('/'));
 
@@ -107,21 +92,22 @@ include __DIR__ . '/header.php';
 <section class="grid two">
   <article class="card">
     <h1>管理画面</h1>
-    <p class="muted">ログイン後遷移先の設定とユーザ/保護URL管理を行えます。</p>
+    <p class="muted">ログイン保護の設定とユーザ管理を行います。</p>
     <?php if ($message): ?><div class="notice success"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+    <?php if ($issuedPassword !== ''): ?><div class="notice issued">発行パスワード: <strong><?= htmlspecialchars($issuedPassword, ENT_QUOTES, 'UTF-8') ?></strong></div><?php endif; ?>
     <?php if ($error): ?><div class="notice error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-    <h2>保護ページログイン後の遷移先</h2>
+    <h2>ログイン後の共通遷移先</h2>
     <form method="post" class="inline-form">
       <input type="hidden" name="action" value="save_redirect">
       <input type="text" name="default_redirect_path" value="<?= htmlspecialchars($defaultRedirect, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(app_path('/'), ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn" type="submit">保存</button>
     </form>
 
-    <h2>保護URL</h2>
+    <h2>保護するURL</h2>
     <form method="post" class="inline-form">
       <input type="hidden" name="action" value="add_protected_route">
-      <input type="text" name="pattern" required placeholder="/protected-demo.php or /admin/*">
+      <input type="text" name="pattern" required placeholder="/index.php or /paid/*">
       <button class="btn" type="submit">追加</button>
     </form>
 
@@ -130,7 +116,7 @@ include __DIR__ . '/header.php';
         <div class="list-item">
           <div>
             <strong><?= htmlspecialchars((string)$route['pattern'], ENT_QUOTES, 'UTF-8') ?></strong>
-            <span class="badge <?= ((int)$route['enabled'] === 1) ? 'on' : 'off' ?>"><?= ((int)$route['enabled'] === 1) ? 'ON' : 'OFF' ?></span>
+            <span class="badge <?= ((int)$route['enabled'] === 1) ? 'on' : 'off' ?>"><?= ((int)$route['enabled'] === 1) ? '有効' : '無効' ?></span>
           </div>
           <div class="row-actions">
             <form method="post">
@@ -154,25 +140,20 @@ include __DIR__ . '/header.php';
     <h2>ユーザ追加</h2>
     <form method="post" class="stack-form">
       <input type="hidden" name="action" value="create_user">
-      <input type="email" name="mail" placeholder="mail" required>
-      <input type="password" name="password" placeholder="password" required>
-      <input type="text" name="line_name" placeholder="line_name">
+      <input type="email" name="mail" placeholder="メールアドレス" required>
+      <input type="text" name="line_name" placeholder="LINE名">
       <select name="status">
-        <option value="active">active</option>
-        <option value="inactive">inactive</option>
+        <option value="active">有効</option>
+        <option value="inactive">無効</option>
       </select>
-      <select name="role">
-        <option value="user">user</option>
-        <option value="admin">admin</option>
-      </select>
-      <button class="btn" type="submit">追加</button>
+      <button class="btn" type="submit">追加（パスワード自動発行）</button>
     </form>
 
     <h2>ユーザ一覧</h2>
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>ID</th><th>mail</th><th>line_name</th><th>status</th><th>role</th><th>操作</th></tr>
+          <tr><th>ID</th><th>メール</th><th>LINE名</th><th>状態</th><th>操作</th></tr>
         </thead>
         <tbody>
           <?php foreach ($users as $u): ?>
@@ -180,8 +161,7 @@ include __DIR__ . '/header.php';
               <td><?= (int)$u['id'] ?></td>
               <td><?= htmlspecialchars((string)$u['mail'], ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= htmlspecialchars((string)$u['line_name'], ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= htmlspecialchars((string)$u['status'], ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= htmlspecialchars((string)$u['role'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td><?= ((string)$u['status'] === 'active') ? '有効' : '無効' ?></td>
               <td>
                 <details>
                   <summary>編集</summary>
@@ -189,15 +169,10 @@ include __DIR__ . '/header.php';
                     <input type="hidden" name="action" value="update_user">
                     <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
                     <input type="email" name="mail" value="<?= htmlspecialchars((string)$u['mail'], ENT_QUOTES, 'UTF-8') ?>" required>
-                    <input type="password" name="password" placeholder="新しいpassword(任意)">
                     <input type="text" name="line_name" value="<?= htmlspecialchars((string)$u['line_name'], ENT_QUOTES, 'UTF-8') ?>">
                     <select name="status">
-                      <option value="active" <?= $u['status'] === 'active' ? 'selected' : '' ?>>active</option>
-                      <option value="inactive" <?= $u['status'] === 'inactive' ? 'selected' : '' ?>>inactive</option>
-                    </select>
-                    <select name="role">
-                      <option value="user" <?= $u['role'] === 'user' ? 'selected' : '' ?>>user</option>
-                      <option value="admin" <?= $u['role'] === 'admin' ? 'selected' : '' ?>>admin</option>
+                      <option value="active" <?= $u['status'] === 'active' ? 'selected' : '' ?>>有効</option>
+                      <option value="inactive" <?= $u['status'] === 'inactive' ? 'selected' : '' ?>>無効</option>
                     </select>
                     <button class="btn" type="submit">更新</button>
                   </form>

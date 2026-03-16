@@ -19,13 +19,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $next = safe_next_path($_POST['next'] ?? null);
 
-    if (login($mail, $password)) {
+    $result = authenticate_user($mail, $password);
+
+    if ($result === 'ok') {
         $destination = $next ?? get_setting('default_redirect_path', app_path('/'));
         header('Location: ' . $destination);
         exit;
     }
 
-    $error = 'メールアドレスまたはパスワードが違います。';
+    if ($result === 'inactive_user') {
+        $error = 'ログイン権限がありません。';
+    } else {
+        $error = 'メールアドレスまたはパスワードが違います。';
+    }
 }
 
 include __DIR__ . '/header.php';
@@ -39,11 +45,11 @@ include __DIR__ . '/header.php';
       <div class="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
-    <label>Mail
+    <label>メールアドレス
       <input type="email" name="mail" required placeholder="you@example.com">
     </label>
 
-    <label>Password
+    <label>パスワード
       <input type="password" name="password" required placeholder="********">
     </label>
 
