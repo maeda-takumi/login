@@ -23,10 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'create_user') {
             $issuedPassword = generate_random_password(10);
-            $stmt = $pdo->prepare('INSERT INTO users (mail, password, status, line_name, role) VALUES (:mail, :password, :status, :line_name, :role)');
+            $stmt = $pdo->prepare('INSERT INTO users (mail, password, plain_password, status, line_name, role) VALUES (:mail, :password, :plain_password, :status, :line_name, :role)');
             $stmt->execute([
                 ':mail' => strtolower(trim((string)$_POST['mail'])),
                 ':password' => password_hash($issuedPassword, PASSWORD_DEFAULT),
+                ':plain_password' => $issuedPassword,
                 ':status' => (string)$_POST['status'],
                 ':line_name' => trim((string)$_POST['line_name']),
                 ':role' => 'user',
@@ -55,9 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'add_protected_route') {
-            $pattern = trim((string)$_POST['pattern']);
+            $patternInput = trim((string)$_POST['pattern']);
+            $parsedPath = parse_url($patternInput, PHP_URL_PATH);
+            $pattern = is_string($parsedPath) ? $parsedPath : $patternInput;
             if ($pattern === '' || !str_starts_with($pattern, '/')) {
-                throw new RuntimeException('保護URLは / から始めてください。');
+                throw new RuntimeException('保護URLは / から始まるパス、またはフルURLで入力してください。');
             }
             $stmt = $pdo->prepare('INSERT INTO protected_routes (pattern, enabled) VALUES (:pattern, 1)');
             $stmt->execute([':pattern' => $pattern]);
@@ -83,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$users = $pdo->query('SELECT id, mail, status, line_name, created_at FROM users WHERE role = "user" ORDER BY id ASC')->fetchAll();
+$users = $pdo->query('SELECT id, mail, plain_password, status, line_name, created_at FROM users WHERE role = "user" ORDER BY id ASC')->fetchAll();
 $routes = $pdo->query('SELECT id, pattern, enabled, created_at FROM protected_routes ORDER BY id DESC')->fetchAll();
 $defaultRedirect = get_setting('default_redirect_path', app_path('/'));
 
@@ -107,7 +110,7 @@ include __DIR__ . '/header.php';
     <h2>保護するURL</h2>
     <form method="post" class="inline-form">
       <input type="hidden" name="action" value="add_protected_route">
-      <input type="text" name="pattern" required placeholder="/index.php or /paid/*">
+      <input type="text" name="pattern" required placeholder="/index.php or https://example.com/paid/*">
       <button class="btn" type="submit">追加</button>
     </form>
 
@@ -153,13 +156,14 @@ include __DIR__ . '/header.php';
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>ID</th><th>メール</th><th>LINE名</th><th>状態</th><th>操作</th></tr>
+          <tr><th>ID</th><th>メール</th><th>パスワード</th><th>LINE名</th><th>状態</th><th>操作</th></tr>
         </thead>
         <tbody>
           <?php foreach ($users as $u): ?>
             <tr>
               <td><?= (int)$u['id'] ?></td>
               <td><?= htmlspecialchars((string)$u['mail'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td><?= htmlspecialchars((string)($u['plain_password'] ?? '未設定'), ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= htmlspecialchars((string)$u['line_name'], ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= ((string)$u['status'] === 'active') ? '有効' : '無効' ?></td>
               <td>

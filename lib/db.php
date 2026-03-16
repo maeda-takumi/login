@@ -33,6 +33,7 @@ function initialize_schema(PDO $pdo): void
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             mail TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL,
+            plain_password TEXT,
             status TEXT NOT NULL DEFAULT "active",
             line_name TEXT,
             role TEXT NOT NULL DEFAULT "user",
@@ -41,6 +42,7 @@ function initialize_schema(PDO $pdo): void
         )'
     );
 
+    ensure_column_exists($pdo, 'users', 'plain_password', 'TEXT');
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS app_settings (
             key TEXT PRIMARY KEY,
@@ -75,6 +77,19 @@ function initialize_schema(PDO $pdo): void
     set_setting_if_missing($pdo, 'default_redirect_path', app_path('/'));
 }
 
+function ensure_column_exists(PDO $pdo, string $table, string $column, string $definition): void
+{
+    $stmt = $pdo->query('PRAGMA table_info(' . $table . ')');
+    $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($columns as $col) {
+        if (($col['name'] ?? '') === $column) {
+            return;
+        }
+    }
+
+    $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition);
+}
 function set_setting_if_missing(PDO $pdo, string $key, string $value): void
 {
     $stmt = $pdo->prepare('INSERT OR IGNORE INTO app_settings (key, value) VALUES (:key, :value)');
