@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         if ($action === 'save_redirect') {
-            $path = trim((string)($_POST['default_redirect_path'] ?? app_path('/dashboard.php')));
-            $path = safe_next_path($path) ?? app_path('/dashboard.php');
+            $path = trim((string)($_POST['default_redirect_path'] ?? app_path('/')));
+            $path = safe_next_path($path) ?? app_path('/');
             set_setting('default_redirect_path', $path);
             $message = 'ログイン後遷移先を更新しました。';
         }
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $users = $pdo->query('SELECT id, mail, status, line_name, role, created_at FROM users ORDER BY id ASC')->fetchAll();
 $routes = $pdo->query('SELECT id, pattern, enabled, created_at FROM protected_routes ORDER BY id DESC')->fetchAll();
-$defaultRedirect = get_setting('default_redirect_path', app_path('/dashboard.php'));
+$defaultRedirect = get_setting('default_redirect_path', app_path('/'));
 
 include __DIR__ . '/header.php';
 ?>
@@ -111,10 +111,10 @@ include __DIR__ . '/header.php';
     <?php if ($message): ?><div class="notice success"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
     <?php if ($error): ?><div class="notice error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-    <h2>ログイン後の遷移先</h2>
+    <h2>保護ページログイン後の遷移先</h2>
     <form method="post" class="inline-form">
       <input type="hidden" name="action" value="save_redirect">
-      <input type="text" name="default_redirect_path" value="<?= htmlspecialchars($defaultRedirect, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">
+      <input type="text" name="default_redirect_path" value="<?= htmlspecialchars($defaultRedirect, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(app_path('/'), ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn" type="submit">保存</button>
     </form>
 

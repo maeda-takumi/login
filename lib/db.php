@@ -72,7 +72,7 @@ function initialize_schema(PDO $pdo): void
         ]);
     }
 
-    set_setting_if_missing($pdo, 'default_redirect_path', app_path('/dashboard.php'));
+    set_setting_if_missing($pdo, 'default_redirect_path', app_path('/'));
 }
 
 function set_setting_if_missing(PDO $pdo, string $key, string $value): void

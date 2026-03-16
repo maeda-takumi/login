@@ -19,8 +19,8 @@ $user = current_user();
     <div class="container header-inner">
       <a class="brand" href="<?= htmlspecialchars(app_path('/'), ENT_QUOTES, 'UTF-8') ?>">Login Starter</a>
       <nav class="nav">
+        <a href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">Dashboard</a>
         <?php if ($user): ?>
-          <a href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">Dashboard</a>
           <?php if ($user['role'] === 'admin'): ?>
             <a href="<?= htmlspecialchars(app_path('/admin.php'), ENT_QUOTES, 'UTF-8') ?>">Admin</a>
           <?php endif; ?>

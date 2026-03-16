@@ -11,11 +11,8 @@ include __DIR__ . '/header.php';
   <h1>汎用ログインパッケージ</h1>
   <p>このフォルダを配置するだけで、ログイン・管理画面・保護URL制御を追加できます。</p>
   <div class="actions">
-    <?php if (is_logged_in()): ?>
-      <a class="btn" href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">ダッシュボードへ</a>
-    <?php else: ?>
-      <a class="btn" href="<?= htmlspecialchars(app_path('/login.php'), ENT_QUOTES, 'UTF-8') ?>">ログインする</a>
-    <?php endif; ?>
+    <a class="btn" href="<?= htmlspecialchars(app_path('/login.php'), ENT_QUOTES, 'UTF-8') ?>">ログインする</a>
+    <a class="btn btn-secondary" href="<?= htmlspecialchars(app_path('/dashboard.php'), ENT_QUOTES, 'UTF-8') ?>">ダッシュボード(公開)</a>
     <a class="btn btn-secondary" href="<?= htmlspecialchars(app_path('/protected-demo.php'), ENT_QUOTES, 'UTF-8') ?>">保護URLサンプル</a>
   </div>
 </section>
@@ -32,7 +29,7 @@ include __DIR__ . '/header.php';
     <h2>主な機能</h2>
     <ul>
       <li>SQLiteのユーザ管理（ID/mail/password/status/line_name）</li>
-      <li>管理画面でユーザCRUDと遷移先設定</li>
+      <li>管理画面でユーザCRUDと保護ページログイン後遷移先設定</li>
       <li>保護URLパターンに対する認証ミドルウェア</li>
     </ul>
   </article>
