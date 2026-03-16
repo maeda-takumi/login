@@ -22,7 +22,13 @@ function should_skip_protection(string $path): bool
 function route_matches_request(string $path, string $fullUrl, string $pattern): bool
 {
     if (str_starts_with($pattern, '/')) {
-        return route_pattern_matches($path, $pattern);
+        foreach (candidate_paths_for_matching($path) as $candidatePath) {
+            if (route_pattern_matches($candidatePath, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     $scheme = parse_url($pattern, PHP_URL_SCHEME);
@@ -31,6 +37,19 @@ function route_matches_request(string $path, string $fullUrl, string $pattern): 
     }
 
     return false;
+}
+function candidate_paths_for_matching(string $path): array
+{
+    $candidates = [$path];
+
+    if (BASE_PATH !== '' && str_starts_with($path, BASE_PATH . '/')) {
+        $withoutBase = substr($path, strlen(BASE_PATH));
+        if (is_string($withoutBase) && $withoutBase !== '') {
+            $candidates[] = $withoutBase;
+        }
+    }
+
+    return array_values(array_unique($candidates));
 }
 function route_pattern_matches(string $path, string $pattern): bool
 {
