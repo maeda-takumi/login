@@ -5,14 +5,23 @@ declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/users_store.php';
 $error = '';
-$next = '?page=index';
+
+$scriptName = (string)($_SERVER['SCRIPT_NAME'] ?? '/login/index.php');
+$scriptDir = str_replace('\\', '/', dirname($scriptName));
+$appBase = str_replace('\\', '/', dirname($scriptDir));
+if ($appBase === '.' || $appBase === '/') {
+    $appBase = '';
+}
+$defaultNext = ($appBase === '' ? '' : rtrim($appBase, '/')) . '/?page=index';
+$next = $defaultNext;
 
 if (isset($_GET['next']) && is_string($_GET['next']) && str_starts_with($_GET['next'], '/')) {
     $next = $_GET['next'];
 }
 
-if (preg_match('#^/login/index\.php(?:\?.*)?$#', $next) === 1) {
-    $next = '?page=index';
+$nextPath = (string)(parse_url($next, PHP_URL_PATH) ?? '');
+if (str_ends_with($nextPath, '/login/index.php')) {
+    $next = $defaultNext;
 }
 if (!empty($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
     header('Location: ' . $next);
