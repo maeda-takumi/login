@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 session_start();
-
-$config = require __DIR__ . '/login_config.php';
+require_once __DIR__ . '/users_store.php';
 $error = '';
 $next = '/?page=index';
 
@@ -18,16 +17,19 @@ if (!empty($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = (string)($_POST['username'] ?? '');
+    $username = trim((string)($_POST['username'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
 
-    $validUser = hash_equals((string)$config['username'], $username);
-    $validPass = password_verify($password, (string)$config['password_hash']);
-
-    if ($validUser && $validPass) {
-        $_SESSION['logged_in'] = true;
-        header('Location: ' . $next);
-        exit;
+    foreach (load_users() as $user) {
+        $nameMatches = hash_equals((string)$user['username'], $username);
+        $passMatches = password_verify($password, (string)$user['password_hash']);
+        $isActive = ((string)($user['status'] ?? 'inactive')) === 'active';
+        if ($nameMatches && $passMatches && $isActive) {
+            $_SESSION['logged_in'] = true;
+            $_SESSION['login_user'] = (string)$user['username'];
+            header('Location: ' . $next);
+            exit;
+        }
     }
 
     $error = 'ログイン情報が正しくありません。';
@@ -39,20 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ログイン</title>
-  <style>
-    body { font-family: sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; background: #f5f7fb; }
-    .card { background: #fff; padding: 24px; border-radius: 10px; width: 320px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
-    label { display: block; margin-bottom: 12px; }
-    input { width: 100%; box-sizing: border-box; padding: 10px; margin-top: 4px; }
-    button { width: 100%; padding: 10px; }
-    .error { color: #b00020; margin-bottom: 10px; }
-  </style>
+  <link rel="stylesheet" href="/login/styke.css?v=<?= time() ?>">
 </head>
-<body>
-  <form class="card" method="post">
+<body class="login-page">
+  <form class="card login-card" method="post">
     <h1>ログイン</h1>
+    <p class="muted">登録ユーザ情報を入力してください。</p>
     <?php if ($error !== ''): ?>
-      <div class="error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
+      <div class="notice error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
     <label>
       ユーザー名

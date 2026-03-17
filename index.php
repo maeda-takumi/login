@@ -35,18 +35,18 @@ if (
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Protected Include Router</title>
-  <style>
-    body { font-family: sans-serif; margin: 24px; }
-    nav a { margin-right: 10px; }
-  </style>
+  <link rel="stylesheet" href="/login/styke.css?v=<?= time() ?>">
 </head>
 <body>
-  <nav>
+  <header class="header"><div class="header-inner"><strong>Protected Include Router</strong><nav class="nav">
     <a href="/?page=index">Home</a>
     <a href="/?page=company">Company</a>
+    <a href="/login/admin.php">User Admin</a>
     <a href="/login/logout.php">Logout</a>
-  </nav>
+  </nav></div></header>
+  <main class="wrap">
   <hr>
   <?php include $realRequested; ?>
+  </main>
 </body>
 </html>
