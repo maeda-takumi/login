@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . 'login_check.php';
+require_once __DIR__ . '/login_check.php';
 
 $page = $_GET['page'] ?? 'index';
 if (!is_string($page) || trim($page) === '') {
