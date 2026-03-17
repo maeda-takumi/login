@@ -7,15 +7,21 @@ function users_file_path(): string
     return __DIR__ . '/users.json';
 }
 
+function normalize_status(mixed $status): string
+{
+    return ((string)$status) === 'active' ? 'active' : 'inactive';
+}
 function load_users(): array
 {
     $path = users_file_path();
     if (!is_file($path)) {
+        $defaultPassword = 'password123';
         $default = [[
             'id' => 1,
-            'username' => 'admin',
-            'password' => 'password123',
-            'password_hash' => password_hash('password123', PASSWORD_DEFAULT),
+            'line_name' => 'admin',
+            'email' => 'admin@example.com',
+            'password' => $defaultPassword,
+            'password_hash' => password_hash($defaultPassword, PASSWORD_DEFAULT),
             'status' => 'active',
         ]];
         save_users($default);
@@ -33,15 +39,26 @@ function load_users(): array
             continue;
         }
 
+        $legacyUsername = trim((string)($row['username'] ?? ''));
+        $email = trim((string)($row['email'] ?? ''));
+        if ($email === '') {
+            $email = $legacyUsername;
+        }
+
+        $lineName = trim((string)($row['line_name'] ?? ''));
+        if ($lineName === '') {
+            $lineName = $legacyUsername !== '' ? $legacyUsername : $email;
+        }
         $password = (string)($row['password'] ?? '');
         $passwordHash = (string)($row['password_hash'] ?? '');
 
         $normalized[] = [
             'id' => (int)($row['id'] ?? 0),
-            'username' => (string)($row['username'] ?? ''),
+            'line_name' => $lineName,
+            'email' => $email,
             'password' => $password,
             'password_hash' => $passwordHash,
-            'status' => ((string)($row['status'] ?? 'inactive')) === 'active' ? 'active' : 'inactive',
+            'status' => normalize_status($row['status'] ?? 'inactive'),
         ];
     }
 

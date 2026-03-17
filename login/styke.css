@@ -41,9 +41,10 @@ body {
   padding: 24px;
 }
 
-.login-card { 
-    padding: 28px;
-    box-sizing: border-box;
+.login-card {
+  padding: 28px;
+  box-sizing: border-box;
+  width: min(480px, 100%);
 }
 
 h1, h2 { margin: 0 0 14px; }
@@ -59,12 +60,14 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--line);
   margin-top: 6px;
+  background: #fff;
 }
 
 button, .btn {
@@ -78,13 +81,18 @@ button, .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-    width: 100%;
+  width: 100%;
 }
 
 button:hover, .btn:hover { filter: brightness(.97); }
 
 .btn-danger { background: var(--danger); }
 
+.btn-sub {
+  background: #eef4ff;
+  color: var(--accent);
+  border: 1px solid #c6d9ff;
+}
 .header {
   position: sticky;
   top: 0;
@@ -125,30 +133,195 @@ button:hover, .btn:hover { filter: brightness(.97); }
   gap: 16px;
 }
 
-.admin-grid {
-  grid-template-columns: 1.1fr .9fr;
+.admin-wrap {
+  display: grid;
+  grid-template-columns: 1fr;
 }
+.admin-card {
+  padding: 20px;
+}
+
 
 .table-wrap { overflow: auto; }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.btn-inline {
+  width: auto;
+  white-space: nowrap;
+}
+
+.card-sub {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--surface-soft);
+}
+
+.search-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.result-meta {
+  margin: 0 0 10px;
+  color: var(--muted);
   font-size: 14px;
 }
 
-th, td {
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
+.user-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
 }
 
-.inline {
+.user-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.user-primary {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.user-secondary {
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.user-password {
+  font-size: 13px;
+}
+
+.user-right {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-pill.active {
+  color: #107c4b;
+  background: #dcf8ea;
+}
+
+.status-pill.inactive {
+  color: #9d4d22;
+  background: #ffe7d8;
+}
+
+.actions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
+.actions form { margin: 0; }
+
+.actions .btn-danger,
+.actions .btn-inline {
+  width: auto;
+}
+
+.pager {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.pager-link {
+  padding: 6px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--accent);
+  border: 1px solid #b7d1ff;
+  background: #f2f7ff;
+}
+
+.pager-link.disabled {
+  pointer-events: none;
+  opacity: .5;
+}
+
+.modal {
+  border: none;
+  border-radius: 14px;
+  width: min(560px, 92vw);
+  padding: 0 0 16px;
+}
+
+.modal::backdrop {
+  background: rgba(8, 20, 40, .45);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.modal .grid {
+  padding: 0 16px;
+}
+
+.inline-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.text-btn {
+  background: transparent;
+  color: var(--muted);
+  width: auto;
+  padding: 4px 8px;
+}
+.center-row{
+    margin: auto;
+}
+.flex_frame{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
 @media (max-width: 900px) {
-  .admin-grid { grid-template-columns: 1fr; }
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .user-item {
+    flex-direction: column;
+  }
+
+  .user-right {
+    justify-items: start;
+  }
 }

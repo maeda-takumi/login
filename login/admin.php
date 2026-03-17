@@ -4,62 +4,152 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/users_store.php';
 
+function h(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
 $message = '';
 $error = '';
+if (isset($_GET['message']) && is_string($_GET['message'])) {
+    $message = $_GET['message'];
+}
+if (isset($_GET['error']) && is_string($_GET['error'])) {
+    $error = $_GET['error'];
+}
+
 $users = load_users();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string)($_POST['action'] ?? '');
 
     if ($action === 'create_user') {
-        $username = trim((string)($_POST['username'] ?? ''));
+        $lineName = trim((string)($_POST['line_name'] ?? ''));
+        $email = strtolower(trim((string)($_POST['email'] ?? '')));
         $password = trim((string)($_POST['password'] ?? ''));
-        $status = ((string)($_POST['status'] ?? 'inactive')) === 'active' ? 'active' : 'inactive';
+        $status = normalize_status($_POST['status'] ?? 'inactive');
 
-        if ($username === '' || $password === '') {
-            $error = 'ユーザー名とパスワードを入力してください。';
+        if ($lineName === '' || $email === '' || $password === '') {
+            $error = 'LINE名・メールアドレス・パスワードは必須です。';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'メールアドレス形式が正しくありません。';
         } else {
-            $users[] = [
-                'id' => next_user_id($users),
-                'username' => $username,
-                'password' => $password,
-                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                'status' => $status,
-            ];
-            save_users($users);
-            $message = 'ユーザを追加しました。';
+            $exists = false;
+            foreach ($users as $user) {
+                if (hash_equals((string)($user['email'] ?? ''), $email)) {
+                    $exists = true;
+                    break;
+                }
+            }
+
+            if ($exists) {
+                $error = '同じメールアドレスのユーザーが既に存在します。';
+            } else {
+                $users[] = [
+                    'id' => next_user_id($users),
+                    'line_name' => $lineName,
+                    'email' => $email,
+                    'password' => $password,
+                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                    'status' => $status,
+                ];
+                save_users($users);
+                header('Location: admin.php?message=' . urlencode('ユーザを追加しました。'));
+                exit;
+            }
         }
     }
 
     if ($action === 'update_user') {
         $id = (int)($_POST['id'] ?? 0);
-        $username = trim((string)($_POST['username'] ?? ''));
+        $lineName = trim((string)($_POST['line_name'] ?? ''));
+        $email = strtolower(trim((string)($_POST['email'] ?? '')));
         $password = trim((string)($_POST['password'] ?? ''));
-        $status = ((string)($_POST['status'] ?? 'inactive')) === 'active' ? 'active' : 'inactive';
+        $status = normalize_status($_POST['status'] ?? 'inactive');
 
-        foreach ($users as &$user) {
-            if ((int)$user['id'] !== $id) {
-                continue;
+        if ($lineName === '' || $email === '') {
+            $error = 'LINE名・メールアドレスは必須です。';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'メールアドレス形式が正しくありません。';
+        } else {
+            $duplicate = false;
+            foreach ($users as $user) {
+                if ((int)($user['id'] ?? 0) === $id) {
+                    continue;
+                }
+                if (hash_equals((string)($user['email'] ?? ''), $email)) {
+                    $duplicate = true;
+                    break;
+                }
             }
-            $user['username'] = $username;
-            $user['status'] = $status;
-            if ($password !== '') {
-                $user['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            if ($duplicate) {
+                $error = '同じメールアドレスのユーザーが既に存在します。';
+            } else {
+                foreach ($users as &$user) {
+                    if ((int)$user['id'] !== $id) {
+                        continue;
+                    }
+                    $user['line_name'] = $lineName;
+                    $user['email'] = $email;
+                    $user['status'] = $status;
+                    if ($password !== '') {
+                        $user['password'] = $password;
+                        $user['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+                    }
+                }
+                unset($user);
+
+                save_users($users);
+                header('Location: admin.php?message=' . urlencode('ユーザ情報を更新しました。'));
+                exit;
             }
         }
-        unset($user);
-        save_users($users);
-        $message = 'ユーザ情報を更新しました。';
     }
 
     if ($action === 'delete_user') {
         $id = (int)($_POST['id'] ?? 0);
         $users = array_values(array_filter($users, static fn(array $user): bool => (int)$user['id'] !== $id));
         save_users($users);
-        $message = 'ユーザを削除しました。';
+        header('Location: admin.php?message=' . urlencode('ユーザを削除しました。'));
+        exit;
     }
 
-    $users = load_users();
+}
+
+$keywordLineName = trim((string)($_GET['line_name'] ?? ''));
+$keywordEmail = trim((string)($_GET['email'] ?? ''));
+
+$filteredUsers = array_values(array_filter($users, static function (array $user) use ($keywordLineName, $keywordEmail): bool {
+    $lineName = (string)($user['line_name'] ?? '');
+    $email = (string)($user['email'] ?? '');
+
+    $lineMatches = $keywordLineName === '' || mb_stripos($lineName, $keywordLineName) !== false;
+    $emailMatches = $keywordEmail === '' || mb_stripos($email, $keywordEmail) !== false;
+
+    return $lineMatches && $emailMatches;
+}));
+
+$perPage = 25;
+$totalUsers = count($filteredUsers);
+$totalPages = max(1, (int)ceil($totalUsers / $perPage));
+$currentPage = (int)($_GET['page'] ?? 1);
+$currentPage = max(1, min($currentPage, $totalPages));
+$offset = ($currentPage - 1) * $perPage;
+$usersOnPage = array_slice($filteredUsers, $offset, $perPage);
+
+function page_link(int $page, string $lineName, string $email): string
+{
+    $params = [
+        'page' => $page,
+    ];
+    if ($lineName !== '') {
+        $params['line_name'] = $lineName;
+    }
+    if ($email !== '') {
+        $params['email'] = $email;
+    }
+
+    return 'admin.php?' . http_build_query($params);
 }
 ?>
 <!doctype html>
@@ -75,94 +165,178 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="header-inner">
       <strong>ログイン管理画面</strong>
       <nav class="nav">
-        <a href="/?page=index">Home</a>
-        <a href="/login/index.php">Login</a>
+        <a href="index.php">Login</a>
       </nav>
     </div>
   </header>
 
-  <main class="wrap grid admin-grid">
-    <section class="card" style="padding:20px;">
-      <h1>ログインユーザ管理</h1>
-      <p class="muted">ログインユーザを管理できます。</p>
-      <?php if ($message !== ''): ?><div class="notice success"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-      <?php if ($error !== ''): ?><div class="notice error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+  <main class="wrap admin-wrap">
+    <section class="card admin-card">
+      <div class="title-row">
+        <div>
+          <h1>ユーザ管理</h1>
+          <p class="muted">登録情報（LINE名 / メールアドレス / password / status）を管理できます。</p>
+        </div>
+        <button type="button" class="btn-inline" data-modal-target="create-user-modal">+ ユーザ追加</button>
+      </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-          <tr><th>ID</th><th>ユーザー名</th><th>パスワード</th><th>状態</th><th>操作</th></tr>
-          </thead>
-          <tbody>
-          <?php foreach ($users as $user): ?>
-            <tr>
-              <td><?= (int)$user['id'] ?></td>
-              <td><?= htmlspecialchars((string)$user['username'], ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= htmlspecialchars((string)($user['password'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= ((string)$user['status'] === 'active') ? '有効' : '無効' ?></td>
-              <td>
-                <form method="post" class="grid" style="gap:8px; min-width: 260px; margin-bottom:8px;">
-                  <input type="hidden" name="action" value="update_user">
-                  <input type="hidden" name="id" value="<?= (int)$user['id'] ?>">
-                  <input type="text" name="username" value="<?= htmlspecialchars((string)$user['username'], ENT_QUOTES, 'UTF-8') ?>" required>
-                  <input type="text" name="password" value="<?= htmlspecialchars((string)($user['password'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="パスワード">
-                  <select name="status">
-                    <option value="active" <?= ((string)$user['status'] === 'active') ? 'selected' : '' ?>>有効</option>
-                    <option value="inactive" <?= ((string)$user['status'] === 'inactive') ? 'selected' : '' ?>>無効</option>
-                  </select>
-                  <button type="submit">更新</button>
-                </form>
+      <?php if ($message !== ''): ?><div class="notice success"><?= h($message) ?></div><?php endif; ?>
+      <?php if ($error !== ''): ?><div class="notice error"><?= h($error) ?></div><?php endif; ?>
+
+      <form method="get" class="search-row card-sub">
+        <label>LINE名検索
+          <input type="text" name="line_name" value="<?= h($keywordLineName) ?>" placeholder="例: yamada">
+        </label>
+        <label>メールアドレス検索
+          <input type="text" name="email" value="<?= h($keywordEmail) ?>" placeholder="example@domain.com">
+        </label>
+        <button type="submit" class="btn-inline center-row">検索</button>
+      </form>
+
+      <p class="result-meta"><?= $totalUsers ?>件中 <?= $offset + 1 ?>〜<?= min($offset + $perPage, $totalUsers === 0 ? 0 : $totalUsers) ?>件を表示</p>
+
+      <ul class="user-list">
+        <?php foreach ($usersOnPage as $user): ?>
+          <li class="user-item">
+            <div class="user-main">
+              <div class="user-primary"><?= h((string)$user['line_name']) ?></div>
+              <div class="user-secondary"><?= h((string)$user['email']) ?></div>
+              <div class="user-password">password: <?= h((string)($user['password'] ?? '')) ?></div>
+            </div>
+            <div class="user-right">
+              <span class="status-pill <?= ((string)$user['status'] === 'active') ? 'active' : 'inactive' ?>">
+                <?= ((string)$user['status'] === 'active') ? '有効' : '無効' ?>
+              </span>
+              <div class="actions">
+                <button
+                  type="button"
+                  class="btn-inline"
+                  data-modal-target="edit-user-modal"
+                  data-id="<?= (int)$user['id'] ?>"
+                  data-line-name="<?= h((string)$user['line_name']) ?>"
+                  data-email="<?= h((string)$user['email']) ?>"
+                  data-password="<?= h((string)($user['password'] ?? '')) ?>"
+                  data-status="<?= h((string)$user['status']) ?>"
+                >編集</button>
                 <form method="post" onsubmit="return confirm('削除しますか？');">
                   <input type="hidden" name="action" value="delete_user">
                   <input type="hidden" name="id" value="<?= (int)$user['id'] ?>">
-                  <button class="btn-danger" type="submit">削除</button>
+                  <button type="submit" class="btn-danger">削除</button>
                 </form>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-          </tbody>
-        </table>
+              </div>
+            </div>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+
+      <?php if ($usersOnPage === []): ?>
+        <p class="muted">表示できるユーザがありません。</p>
+      <?php endif; ?>
+
+      <div class="pager">
+        <a class="pager-link <?= $currentPage <= 1 ? 'disabled' : '' ?>" href="<?= $currentPage <= 1 ? '#' : h(page_link($currentPage - 1, $keywordLineName, $keywordEmail)) ?>">前へ</a>
+        <span class="pager-current"><?= $currentPage ?> / <?= $totalPages ?></span>
+        <a class="pager-link <?= $currentPage >= $totalPages ? 'disabled' : '' ?>" href="<?= $currentPage >= $totalPages ? '#' : h(page_link($currentPage + 1, $keywordLineName, $keywordEmail)) ?>">次へ</a>
       </div>
     </section>
-
-    <section class="card" style="padding:20px;">
-      <h2>新規ユーザ追加</h2>
-      <form method="post" class="grid" id="create-user-form">
-        <input type="hidden" name="action" value="create_user">
-        <label>ユーザー名<input type="text" name="username" required></label>
-        <label>パスワード
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input id="new-user-password" type="text" name="password" required>
-            <button type="button" id="generate-password">自動生成</button>
-          </div>
-        </label>
-        <label>状態
-          <select name="status">
-            <option value="active">有効</option>
-            <option value="inactive">無効</option>
-          </select>
-        </label>
-        <button type="submit">追加</button>
-      </form>
-    </section>
   </main>
+
+  <dialog id="create-user-modal" class="modal">
+    <form method="dialog" class="modal-header">
+      <h2>新規ユーザ追加</h2>
+      <button type="submit" class="text-btn">✕</button>
+    </form>
+    <form method="post" class="grid">
+      <input type="hidden" name="action" value="create_user">
+      <label>LINE名<input type="text" name="line_name" required></label>
+      <label>メールアドレス（ログイン情報）<input type="email" name="email" required></label>
+        <label>password（ログイン情報）
+      <div class="flex_frame">
+        <input id="new-user-password" type="text" name="password" required></label>
+        <button type="button" id="generate-password" class="btn-sub">パスワード自動生成</button>
+    </div>
+      <label>status
+        <select name="status">
+          <option value="active">有効</option>
+          <option value="inactive">無効</option>
+        </select>
+      </label>
+      <div>
+        <button type="submit">登録</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="edit-user-modal" class="modal">
+    <form method="dialog" class="modal-header">
+      <h2>ユーザ編集</h2>
+      <button type="submit" class="text-btn">✕</button>
+    </form>
+    <form method="post" class="grid" id="edit-user-form">
+      <input type="hidden" name="action" value="update_user">
+      <input type="hidden" name="id" id="edit-id">
+      <label>LINE名<input type="text" name="line_name" id="edit-line-name" required></label>
+      <label>メールアドレス（ログイン情報）<input type="email" name="email" id="edit-email" required></label>
+      <label>password（ログイン情報）<input type="text" name="password" id="edit-password"></label>
+      <label>status
+        <select name="status" id="edit-status">
+          <option value="active">有効</option>
+          <option value="inactive">無効</option>
+        </select>
+      </label>
+      <button type="submit">更新</button>
+    </form>
+  </dialog>
   <script>
     (() => {
       const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
       const button = document.getElementById('generate-password');
       const input = document.getElementById('new-user-password');
 
-      if (!button || !input) {
-        return;
+      if (button && input) {
+        button.addEventListener('click', () => {
+          const length = 12;
+          let password = '';
+          for (let i = 0; i < length; i += 1) {
+            password += letters[Math.floor(Math.random() * letters.length)];
+          }
+          input.value = password;
+        });
       }
 
-      button.addEventListener('click', () => {
-        const length = 12;
-        let password = '';
-        for (let i = 0; i < length; i += 1) {
-          password += letters[Math.floor(Math.random() * letters.length)];
-        }
-        input.value = password;
+      const openButtons = document.querySelectorAll('[data-modal-target]');
+      openButtons.forEach((openButton) => {
+        openButton.addEventListener('click', () => {
+          const modalId = openButton.getAttribute('data-modal-target');
+          if (!modalId) {
+            return;
+          }
+
+          const modal = document.getElementById(modalId);
+          if (!(modal instanceof HTMLDialogElement)) {
+            return;
+          }
+
+          if (modalId === 'edit-user-modal') {
+            const idInput = document.getElementById('edit-id');
+            const lineNameInput = document.getElementById('edit-line-name');
+            const emailInput = document.getElementById('edit-email');
+            const passwordInput = document.getElementById('edit-password');
+            const statusInput = document.getElementById('edit-status');
+
+            if (!idInput || !lineNameInput || !emailInput || !passwordInput || !statusInput) {
+              return;
+            }
+
+            idInput.value = openButton.dataset.id ?? '';
+            lineNameInput.value = openButton.dataset.lineName ?? '';
+            emailInput.value = openButton.dataset.email ?? '';
+            passwordInput.value = openButton.dataset.password ?? '';
+            statusInput.value = openButton.dataset.status ?? 'inactive';
+          }
+
+          modal.showModal();
+        });
       });
     })();
   </script>

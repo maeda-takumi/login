@@ -29,16 +29,16 @@ if (!empty($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim((string)($_POST['username'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
 
     foreach (load_users() as $user) {
-        $nameMatches = hash_equals((string)$user['username'], $username);
+        $nameMatches = hash_equals((string)($user['email'] ?? ''), $email);
         $passMatches = password_verify($password, (string)$user['password_hash']);
         $isActive = ((string)($user['status'] ?? 'inactive')) === 'active';
         if ($nameMatches && $passMatches && $isActive) {
             $_SESSION['logged_in'] = true;
-            $_SESSION['login_user'] = (string)$user['username'];
+            $_SESSION['login_user'] = (string)($user['line_name'] ?? ($user['email'] ?? ''));
             header('Location: ' . $next);
             exit;
         }
@@ -63,8 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="notice error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
     <label>
-      ユーザー名
-      <input type="text" name="username" required>
+      メールアドレス
+      <input type="email" name="email" required>
     </label>
     <label>
       パスワード

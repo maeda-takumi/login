@@ -1,9 +1,10 @@
 [
     {
         "id": 1,
-        "username": "admin",
-        "password_hash": "$2y$12$vc1KZ9nKTk4LX.0ipyx1buGJVinBLaGd5p.ntQtH8iHC2ZGmTkHGO",
-        "status": "active",
-        "password": "password123"
+        "line_name": "admin",
+        "email": "admin@example.com",
+        "password": "password123",
+        "password_hash": "$2y$12$lSq57ABVMww43YD9S819M.KHyOONQgecv9gDOOqZcIBI3QtV7QIxy",
+        "status": "active"
     }
 ]
