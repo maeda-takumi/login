@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($nameMatches && $passMatches && $isActive) {
             $_SESSION['logged_in'] = true;
             $_SESSION['login_user'] = (string)($user['line_name'] ?? ($user['email'] ?? ''));
+            $_SESSION['login_email'] = (string)($user['email'] ?? '');
             header('Location: ' . $next);
             exit;
         }
