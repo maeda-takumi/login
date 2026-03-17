@@ -11,6 +11,9 @@ if (isset($_GET['next']) && is_string($_GET['next']) && str_starts_with($_GET['n
     $next = $_GET['next'];
 }
 
+if (preg_match('#^/login/index\.php(?:\?.*)?$#', $next) === 1) {
+    $next = '?page=index';
+}
 if (!empty($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
     header('Location: ' . $next);
     exit;
