@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/login_check.php';
+require_once __DIR__ . 'login_check.php';
 
 $page = $_GET['page'] ?? 'index';
 if (!is_string($page) || trim($page) === '') {
@@ -10,7 +10,7 @@ if (!is_string($page) || trim($page) === '') {
 }
 
 if (!preg_match('/^[a-zA-Z0-9_-]+$/', $page)) {
-    header('Location: /?page=index');
+    header('Location: ?page=index');
     exit;
 }
 
@@ -25,7 +25,7 @@ if (
     || strncmp($realRequested, $realIncludeDir, strlen($realIncludeDir)) !== 0
     || !is_file($realRequested)
 ) {
-    header('Location: /?page=index');
+    header('Location: ?page=index');
     exit;
 }
 ?>
@@ -39,10 +39,10 @@ if (
 </head>
 <body>
   <header class="header"><div class="header-inner"><strong>Protected Include Router</strong><nav class="nav">
-    <a href="/?page=index">Home</a>
-    <a href="/?page=company">Company</a>
-    <a href="/login/admin.php">User Admin</a>
-    <a href="/login/logout.php">Logout</a>
+    <a href="?page=index">Home</a>
+    <a href="?page=company">Company</a>
+    <a href="login/admin.php">User Admin</a>
+    <a href="login/logout.php">Logout</a>
   </nav></div></header>
   <main class="wrap">
   <hr>

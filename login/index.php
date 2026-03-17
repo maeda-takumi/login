@@ -5,9 +5,9 @@ declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/users_store.php';
 $error = '';
-$next = '/?page=index';
+$next = '?page=index';
 
-if (isset($_GET['next']) && is_string($_GET['next']) && $_GET['next'] !== '') {
+if (isset($_GET['next']) && is_string($_GET['next']) && str_starts_with($_GET['next'], '/')) {
     $next = $_GET['next'];
 }
 
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ログイン</title>
-  <link rel="stylesheet" href="/login/styke.css?v=<?= time() ?>">
+  <link rel="stylesheet" href="styke.css?v=<?= time() ?>">
 </head>
 <body class="login-page">
   <form class="card login-card" method="post">

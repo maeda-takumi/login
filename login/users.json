@@ -3,6 +3,7 @@
         "id": 1,
         "username": "admin",
         "password_hash": "$2y$12$vc1KZ9nKTk4LX.0ipyx1buGJVinBLaGd5p.ntQtH8iHC2ZGmTkHGO",
-        "status": "active"
+        "status": "active",
+        "password": "password123"
     }
 ]

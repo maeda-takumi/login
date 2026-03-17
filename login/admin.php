@@ -2,13 +2,7 @@
 
 declare(strict_types=1);
 
-session_start();
 require_once __DIR__ . '/users_store.php';
-
-// if (empty($_SESSION['logged_in'])) {
-//     header('Location: /login/index.php?next=' . rawurlencode('/login/admin.php'));
-//     exit;
-// }
 
 $message = '';
 $error = '';
@@ -19,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'create_user') {
         $username = trim((string)($_POST['username'] ?? ''));
-        $password = (string)($_POST['password'] ?? '');
+        $password = trim((string)($_POST['password'] ?? ''));
         $status = ((string)($_POST['status'] ?? 'inactive')) === 'active' ? 'active' : 'inactive';
 
         if ($username === '' || $password === '') {
@@ -28,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $users[] = [
                 'id' => next_user_id($users),
                 'username' => $username,
+                'password' => $password,
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'status' => $status,
             ];
@@ -39,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_user') {
         $id = (int)($_POST['id'] ?? 0);
         $username = trim((string)($_POST['username'] ?? ''));
-        $password = (string)($_POST['password'] ?? '');
+        $password = trim((string)($_POST['password'] ?? ''));
         $status = ((string)($_POST['status'] ?? 'inactive')) === 'active' ? 'active' : 'inactive';
 
         foreach ($users as &$user) {
@@ -81,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <strong>ログイン管理画面</strong>
       <nav class="nav">
         <a href="/?page=index">Home</a>
-        <a href="/login/logout.php">Logout</a>
+        <a href="/login/index.php">Login</a>
       </nav>
     </div>
   </header>
@@ -89,27 +84,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <main class="wrap grid admin-grid">
     <section class="card" style="padding:20px;">
       <h1>ログインユーザ管理</h1>
-      <p class="muted">旧仕様を維持したまま、ログインユーザを管理できます。</p>
+      <p class="muted">ログインユーザを管理できます。</p>
       <?php if ($message !== ''): ?><div class="notice success"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
       <?php if ($error !== ''): ?><div class="notice error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
       <div class="table-wrap">
         <table>
           <thead>
-          <tr><th>ID</th><th>ユーザー名</th><th>状態</th><th>操作</th></tr>
+          <tr><th>ID</th><th>ユーザー名</th><th>パスワード</th><th>状態</th><th>操作</th></tr>
           </thead>
           <tbody>
           <?php foreach ($users as $user): ?>
             <tr>
               <td><?= (int)$user['id'] ?></td>
               <td><?= htmlspecialchars((string)$user['username'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td><?= htmlspecialchars((string)($user['password'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
               <td><?= ((string)$user['status'] === 'active') ? '有効' : '無効' ?></td>
               <td>
                 <form method="post" class="grid" style="gap:8px; min-width: 260px; margin-bottom:8px;">
                   <input type="hidden" name="action" value="update_user">
                   <input type="hidden" name="id" value="<?= (int)$user['id'] ?>">
                   <input type="text" name="username" value="<?= htmlspecialchars((string)$user['username'], ENT_QUOTES, 'UTF-8') ?>" required>
-                  <input type="password" name="password" placeholder="新パスワード（変更時のみ）">
+                  <input type="text" name="password" value="<?= htmlspecialchars((string)($user['password'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="パスワード">
                   <select name="status">
                     <option value="active" <?= ((string)$user['status'] === 'active') ? 'selected' : '' ?>>有効</option>
                     <option value="inactive" <?= ((string)$user['status'] === 'inactive') ? 'selected' : '' ?>>無効</option>
@@ -131,10 +127,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <section class="card" style="padding:20px;">
       <h2>新規ユーザ追加</h2>
-      <form method="post" class="grid">
+      <form method="post" class="grid" id="create-user-form">
         <input type="hidden" name="action" value="create_user">
         <label>ユーザー名<input type="text" name="username" required></label>
-        <label>パスワード<input type="password" name="password" required></label>
+        <label>パスワード
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="new-user-password" type="text" name="password" required>
+            <button type="button" id="generate-password">自動生成</button>
+          </div>
+        </label>
         <label>状態
           <select name="status">
             <option value="active">有効</option>
@@ -145,5 +146,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
     </section>
   </main>
+  <script>
+    (() => {
+      const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+      const button = document.getElementById('generate-password');
+      const input = document.getElementById('new-user-password');
+
+      if (!button || !input) {
+        return;
+      }
+
+      button.addEventListener('click', () => {
+        const length = 12;
+        let password = '';
+        for (let i = 0; i < length; i += 1) {
+          password += letters[Math.floor(Math.random() * letters.length)];
+        }
+        input.value = password;
+      });
+    })();
+  </script>
 </body>
 </html>

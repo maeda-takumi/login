@@ -14,6 +14,7 @@ function load_users(): array
         $default = [[
             'id' => 1,
             'username' => 'admin',
+            'password' => 'password123',
             'password_hash' => password_hash('password123', PASSWORD_DEFAULT),
             'status' => 'active',
         ]];
@@ -22,7 +23,29 @@ function load_users(): array
     }
 
     $decoded = json_decode((string)file_get_contents($path), true);
-    return is_array($decoded) ? $decoded : [];
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($decoded as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $password = (string)($row['password'] ?? '');
+        $passwordHash = (string)($row['password_hash'] ?? '');
+
+        $normalized[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'username' => (string)($row['username'] ?? ''),
+            'password' => $password,
+            'password_hash' => $passwordHash,
+            'status' => ((string)($row['status'] ?? 'inactive')) === 'active' ? 'active' : 'inactive',
+        ];
+    }
+
+    return $normalized;
 }
 
 function save_users(array $users): void

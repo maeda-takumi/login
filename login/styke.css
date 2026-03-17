@@ -41,9 +41,9 @@ body {
   padding: 24px;
 }
 
-.login-card {
-  width: min(430px, 94vw);
-  padding: 28px;
+.login-card { 
+    padding: 28px;
+    box-sizing: border-box;
 }
 
 h1, h2 { margin: 0 0 14px; }
@@ -78,6 +78,7 @@ button, .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+    width: 100%;
 }
 
 button:hover, .btn:hover { filter: brightness(.97); }
